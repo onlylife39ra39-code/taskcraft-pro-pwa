@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskCraft Pro - タスク管理</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              850: '#131f37',
+              900: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-check-double text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">TaskCraft Pro</h1>
+          <p class="text-xs text-slate-400 hidden sm:block">スマートな次世代ToDo・タスクマネージャー</p>
+        </div>
+      </div>
+
+      <!-- Status & Actions -->
+      <div class="flex items-center space-x-3">
+        <div id="network-status" class="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="network-text">オンライン</span>
+        </div>
+        <button id="open-modal-btn" class="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-medium text-sm px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/25 transition transform active:scale-95">
+          <i class="fa-solid fa-plus"></i>
+          <span class="hidden sm:inline">新規タスク</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <!-- Stats Bar -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 flex items-center justify-between backdrop-blur-sm">
+        <div>
+          <p class="text-xs text-slate-400 font-medium">全タスク</p>
+          <p id="stat-total" class="text-2xl font-bold text-slate-100 mt-1">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-slate-700/50 text-slate-300 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-list-check"></i>
+        </div>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 flex items-center justify-between backdrop-blur-sm">
+        <div>
+          <p class="text-xs text-slate-400 font-medium">未完了</p>
+          <p id="stat-pending" class="text-2xl font-bold text-amber-400 mt-1">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+          <i class="fa-regular fa-clock"></i>
+        </div>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 flex items-center justify-between backdrop-blur-sm">
+        <div>
+          <p class="text-xs text-slate-400 font-medium">進行中</p>
+          <p id="stat-in-progress" class="text-2xl font-bold text-blue-400 mt-1">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-spinner animate-spin-slow"></i>
+        </div>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 flex items-center justify-between backdrop-blur-sm">
+        <div>
+          <p class="text-xs text-slate-400 font-medium">完了率</p>
+          <p id="stat-completed-rate" class="text-2xl font-bold text-emerald-400 mt-1">0%</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter Bar -->
+    <section class="bg-slate-800/40 border border-slate-800 rounded-2xl p-4 space-y-4 backdrop-blur-sm">
+      <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+        <!-- Search Input -->
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"></i>
+          <input type="text" id="search-input" placeholder="タスク名または説明文で検索..." class="w-full bg-slate-900/80 border border-slate-700/60 focus:border-indigo-500 text-slate-200 text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition placeholder-slate-500">
+        </div>
+
+        <!-- Status Filter Tabs -->
+        <div class="flex bg-slate-900/80 p-1 rounded-xl border border-slate-700/60 text-xs font-medium self-start md:self-auto">
+          <button data-filter-status="all" class="filter-status-btn px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition active-tab">すべて</button>
+          <button data-filter-status="pending" class="filter-status-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">未完了</button>
+          <button data-filter-status="in_progress" class="filter-status-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">進行中</button>
+          <button data-filter-status="completed" class="filter-status-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">完了</button>
+        </div>
+      </div>
+
+      <!-- Secondary Filters (Priority & Tags) -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-slate-500 font-medium"><i class="fa-solid fa-filter mr-1"></i>優先度:</span>
+          <select id="priority-filter" class="bg-slate-900 border border-slate-700/60 text-slate-300 rounded-lg px-2.5 py-1 outline-none text-xs focus:border-indigo-500">
+            <option value="all">すべての優先度</option>
+            <option value="high">高 (High)</option>
+            <option value="medium">中 (Medium)</option>
+            <option value="low">低 (Low)</option>
+          </select>
+
+          <span class="text-slate-500 font-medium ml-2"><i class="fa-solid fa-tags mr-1"></i>タグ:</span>
+          <div id="tag-chips-container" class="flex flex-wrap items-center gap-1.5">
+            <!-- Tag chips inserted dynamically -->
+          </div>
+        </div>
+
+        <!-- Sort Dropdown -->
+        <div class="flex items-center space-x-2">
+          <span class="text-slate-500 font-medium"><i class="fa-solid fa-arrow-down-wide-short mr-1"></i>並べ替え:</span>
+          <select id="sort-select" class="bg-slate-900 border border-slate-700/60 text-slate-300 rounded-lg px-2.5 py-1 outline-none text-xs focus:border-indigo-500">
+            <option value="dueDate-asc">期日が近い順</option>
+            <option value="dueDate-desc">期日が遠い順</option>
+            <option value="priority-desc">優先度が高い順</option>
+            <option value="createdAt-desc">作成日が新しい順</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Task List Container -->
+    <section class="space-y-3">
+      <div id="task-list" class="grid grid-cols-1 gap-3.5">
+        <!-- Task Cards will be rendered dynamically -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center space-y-4 bg-slate-800/20 rounded-2xl border border-dashed border-slate-800">
+        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 text-2xl">
+          <i class="fa-solid fa-folder-open"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-semibold text-slate-300">該当するタスクが見つかりません</h3>
+          <p class="text-xs text-slate-500 mt-1">条件を変更するか、新しいタスクを追加してください。</p>
+        </div>
+        <button id="empty-add-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-xl transition">
+          + タスクを作成する
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Task Add/Edit Modal -->
+  <div id="task-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl p-6 mx-4 space-y-5 transform scale-95 transition-transform duration-200">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 id="modal-title" class="text-lg font-bold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-indigo-400"></i>
+          <span>新規タスク追加</span>
+        </h2>
+        <button id="close-modal-btn" class="text-slate-400 hover:text-slate-200 text-lg w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="task-form" class="space-y-4">
+        <input type="hidden" id="task-id">
+
+        <!-- Title -->
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">タスクタイトル <span class="text-rose-400">*</span></label>
+          <input type="text" id="task-title" required placeholder="例: デザインレビュー資料の作成" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">詳細メモ</label>
+          <textarea id="task-description" rows="3" placeholder="詳細な手順や要件をメモ..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition resize-none"></textarea>
+        </div>
+
+        <!-- Priority & Status Row -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">優先度</label>
+            <select id="task-priority" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+              <option value="high">🔴 高 (High)</option>
+              <option value="medium" selected>🟡 中 (Medium)</option>
+              <option value="low">⚪ 低 (Low)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">ステータス</label>
+            <select id="task-status" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+              <option value="pending">未完了</option>
+              <option value="in_progress">進行中</option>
+              <option value="completed">完了</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Due Date & Tags Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">期限日</label>
+            <input type="date" id="task-duedate" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">タグ (カンマ区切り)</label>
+            <input type="text" id="task-tags" placeholder="仕事, 設計, 要確認" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+          <button type="button" id="cancel-modal-btn" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">キャンセル</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-medium bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-lg shadow-indigo-500/20 transition">保存する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
